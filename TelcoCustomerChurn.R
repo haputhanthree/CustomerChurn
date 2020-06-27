@@ -27,6 +27,10 @@ print(ncol(CustData))
 #remove cust ID and organize columns
 CustData = CustData[,c(2,3,4,5,7:47,6)]
 
+ncol(CustData)
+
+CustData[1:45]
+
 
 #Normalization
 normalize <- function(x) {
@@ -48,30 +52,50 @@ test.CustData = CustDataNormalized[-dat.d,]
 #seperate dataframe for 'Churn' feature 
 train.CustData.labels = CustData[dat.d,46]
 test.CustData.labels  = CustData[-dat.d,46]
+
+
+#pCA ON train dataset
+train.CustData.pca = prcomp(train.CustData, center = TRUE, scale = TRUE)
+train.CustData.pca
+
+summary(train.CustData.pca)
+
+test.CustData.pca = predict(train.CustData.pca, newdata = test.CustData)
+
+
+
+
+
 #get number of rows in training dataset
 nrow(train.CustData)
 library(class)
 
-knn.70 = knn(train=train.CustData, test=test.CustData, cl=train.CustData.labels, k=70)
-knn.71 = knn(train=train.CustData, test=test.CustData, cl=train.CustData.labels, k=71)
-
-#Calculate the proportion of correct classification for k = 26, 27
-ACC.70 = 100 * sum(test.CustData.labels == knn.70)/NROW(test.CustData.labels)
-ACC.71 = 100 * sum(test.CustData.labels == knn.71)/NROW(test.CustData.labels)
-
-table(knn.70 ,test.CustData.labels)
-
-library(caret)
-
-confusionMatrix(table(knn.70 ,test.CustData.labels))
 
 #find optimum k value 
 i=1
 k.optm=1
-for (i in 1:44){
-  knn.mod <- knn(train=train.CustData, test=test.CustData, cl=train.CustData.labels, k=i)
-  k.optm[i] <- 100 * sum(test.CustData.labels == knn.mod)/NROW(test.CustData.labels)
+for (i in 1:12){
+  knn.mod = knn(train=train.CustData.pca$x[,1:12], test=test.CustData.pca[,1:12], cl=train.CustData.labels, k=i)
+  k.optm[i] = 100 * sum(test.CustData.labels == knn.mod)/NROW(test.CustData.labels)
   k=i
   cat(k,'=',k.optm[i],'
     ')
-  }
+}
+
+# k =11 gives highest accuracy.
+
+knn.11 = knn(train=train.CustData.pca$x[,1:12], test=test.CustData.pca[,1:12], cl=train.CustData.labels, k=11)
+#knn.71 = knn(train=train.CustData, test=test.CustData, cl=train.CustData.labels, k=71)
+
+#Calculate the proportion of correct classification for k = 26, 27
+ACC.11 = 100 * sum(test.CustData.labels == knn.11)/NROW(test.CustData.labels)
+#ACC.71 = 100 * sum(test.CustData.labels == knn.71)/NROW(test.CustData.labels)
+
+table(knn.11 ,test.CustData.labels)
+
+library(caret)
+
+confusionMatrix(table(knn.11 ,test.CustData.labels))
+
+
+
